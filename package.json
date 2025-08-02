@@ -1,23 +1,20 @@
 {
   "name": "ourcodeng",
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Jacob Samuel G.",
+  "homepage": "https://github.com/jacsamg/ourcodeng",
+  "description": "Personal libraries for Angular",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "projects/*"
+  ],
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development"
+    "test": "npm run test --workspaces"
   },
-  "prettier": {
-    "overrides": [
-      {
-        "files": "*.html",
-        "options": {
-          "parser": "angular"
-        }
-      }
-    ]
-  },
-  "private": true,
   "dependencies": {
     "@angular/common": "^20.1.0",
     "@angular/compiler": "^20.1.0",
@@ -37,5 +34,15 @@
     "ng-packagr": "^20.1.0",
     "prettier": "^3.6.2",
     "typescript": "~5.8.2"
+  },
+  "prettier": {
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
   }
 }
