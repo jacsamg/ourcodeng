@@ -10,3 +10,4 @@ export * from './lib/services/firestore.service';
 
 // Types
 export * from './lib/types/firebase.types';
+export * from './lib/types/firestore.types';

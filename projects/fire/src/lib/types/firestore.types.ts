@@ -1,5 +1,5 @@
-import type { FieldValue } from "firebase/firestore";
+import type { FieldValue } from 'firebase/firestore';
 
-export type DbUpdateData = {
-	[x: string]: FieldValue | Partial<unknown> | undefined;
+export type FirestoreUpdateData = {
+  [x: string]: FieldValue | Partial<unknown> | undefined;
 };
