@@ -13,7 +13,8 @@
   "scripts": {
     "ng": "ng",
     "build": "ng build",
-    "test": "npm run test --workspaces"
+    "test": "npm run test --workspaces",
+    "publish:fire": "cd dist/fire && npm publish && cd ../.."
   },
   "dependencies": {
     "@angular/common": "^20.1.0",

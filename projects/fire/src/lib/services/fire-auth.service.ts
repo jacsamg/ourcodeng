@@ -20,7 +20,6 @@ import {
 } from 'firebase/auth';
 import { firstValueFrom, ReplaySubject } from 'rxjs';
 import { defaultEmulatorconfig } from '../data/firebase.data';
-import { LOGGER_TAG } from '../data/logger.data';
 import type { FirebaseEmulatorConfig } from '../types/firebase.types';
 
 @Injectable({
@@ -44,7 +43,6 @@ export class FireAuthService {
   ): Promise<void> {
     if (this.instance) return;
 
-    console.info(LOGGER_TAG.STARTING, FireAuthService.name);
     this.instance = this.ngZone.runOutsideAngular(() => {
       const instance = getAuth(fireApp);
 
@@ -62,13 +60,11 @@ export class FireAuthService {
         this.ngZone.run(() => {
           this.currentUserSubject.next(user);
           this.currentUserStateSubject.next(!!user);
-          console.info(LOGGER_TAG.INFO, 'Session:', true);
         }),
       );
 
       return instance;
     });
-    console.info(LOGGER_TAG.STARTED, FireAuthService.name);
   }
 
   private async reauthenticateWithCredential(password: string): Promise<void> {

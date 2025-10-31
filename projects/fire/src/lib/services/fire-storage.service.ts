@@ -13,7 +13,6 @@ import {
   uploadBytes,
 } from 'firebase/storage';
 import { defaultEmulatorconfig } from '../data/firebase.data';
-import { LOGGER_TAG } from '../data/logger.data';
 import type { FirebaseEmulatorConfig } from '../types/firebase.types';
 
 @Injectable({
@@ -30,7 +29,6 @@ export class FireStorageService {
   ): void {
     if (this.instance) return;
 
-    console.info(LOGGER_TAG.STARTING, FireStorageService.name);
     this.instance = this.ngZone.runOutsideAngular(() => {
       const instance = getStorage(fireApp);
 
@@ -41,7 +39,6 @@ export class FireStorageService {
 
       return instance;
     });
-    console.info(LOGGER_TAG.STARTED, FireStorageService.name);
   }
 
   public ref(path?: string): StorageReference {

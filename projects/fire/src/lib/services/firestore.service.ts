@@ -23,7 +23,6 @@ import {
   type WithFieldValue,
 } from 'firebase/firestore';
 import { defaultEmulatorconfig } from '../data/firebase.data';
-import { LOGGER_TAG } from '../data/logger.data';
 import type { FirebaseEmulatorConfig } from '../types/firebase.types';
 
 @Injectable({
@@ -42,7 +41,6 @@ export class FirestoreService {
   ): void {
     if (this.bootstraped) return;
 
-    console.info(LOGGER_TAG.STARTING, FirestoreService.name);
     this.ngZone.runOutsideAngular(() => {
       for (const dbName of dbNames) {
         const instance = getFirestore(fireApp, dbName);
@@ -53,10 +51,8 @@ export class FirestoreService {
         }
 
         this.dbInstances.set(dbName, instance);
-        console.info(LOGGER_TAG.INFO, `Initialized DB:`, dbName);
       }
     });
-    console.info(LOGGER_TAG.STARTED, FirestoreService.name);
 
     this.bootstraped = true;
   }
