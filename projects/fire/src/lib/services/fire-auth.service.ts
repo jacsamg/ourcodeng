@@ -9,6 +9,7 @@ import {
   getIdToken,
   getIdTokenResult,
   type IdTokenResult,
+  type ParsedToken,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
   setPersistence,
@@ -138,8 +139,8 @@ export class FireAuthService {
     );
   }
 
-  public async getCustomClaims<T>(refresh?: boolean): Promise<T> {
+  public async getCustomClaims<T>(refresh?: boolean): Promise<T & ParsedToken> {
     const token = await this.getIdTokenResult(refresh);
-    return <T>(token.claims as unknown);
+    return <T & ParsedToken>(token.claims as unknown);
   }
 }
