@@ -1,6 +1,6 @@
 {
   "name": "ourcodeng",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "license": "MIT",
   "author": "Jacob Samuel G.",
   "homepage": "https://github.com/jacsamg/ourcodeng",
@@ -24,7 +24,7 @@
     "ng": "ng",
     "build": "ng build",
     "test": "npm run test --workspaces",
-    "publish:fire": "cd dist/fire && npm publish && cd ../.."
+    "deploy:fire": "npm run build --prefix projects/fire && cd dist/fire && npm publish && cd ../.."
   },
   "dependencies": {
     "@angular/common": "^21.0.5",
