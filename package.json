@@ -27,23 +27,23 @@
     "publish:fire": "cd dist/fire && npm publish && cd ../.."
   },
   "dependencies": {
-    "@angular/common": "^20.1.0",
-    "@angular/compiler": "^20.1.0",
-    "@angular/core": "^20.1.0",
-    "@angular/forms": "^20.1.0",
-    "@angular/platform-browser": "^20.1.0",
-    "@angular/router": "^20.1.0",
+    "@angular/common": "^21.0.5",
+    "@angular/compiler": "^21.0.5",
+    "@angular/core": "^21.0.5",
+    "@angular/forms": "^21.0.5",
+    "@angular/platform-browser": "^21.0.5",
+    "@angular/router": "^21.0.5",
     "rxjs": "^7.8.2",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "^20.1.4",
-    "@angular/cli": "^20.1.4",
-    "@angular/compiler-cli": "^20.1.0",
+    "@angular/build": "^21.0.3",
+    "@angular/cli": "^21.0.3",
+    "@angular/compiler-cli": "^21.0.5",
     "@biomejs/biome": "^2.1.3",
     "@types/jasmine": "^5.1.8",
-    "ng-packagr": "^20.1.0",
+    "ng-packagr": "^21.0.1",
     "prettier": "^3.6.2",
-    "typescript": "~5.8.2"
+    "typescript": "~5.9.3"
   }
 }
