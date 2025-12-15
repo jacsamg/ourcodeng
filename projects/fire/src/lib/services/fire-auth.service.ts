@@ -1,4 +1,4 @@
-import { Injectable, inject, NgZone } from '@angular/core';
+import { Injectable } from '@angular/core';
 import type { FirebaseApp } from 'firebase/app';
 import {
   type Auth,
@@ -27,8 +27,6 @@ import type { FirebaseEmulatorConfig } from '../types/firebase.types';
   providedIn: 'root',
 })
 export class FireAuthService {
-  private readonly ngZone = inject(NgZone);
-
   private instance!: Auth;
 
   private readonly currentUserSubject = new ReplaySubject<User | null>(1);
@@ -44,27 +42,21 @@ export class FireAuthService {
   ): Promise<void> {
     if (this.instance) return;
 
-    this.instance = this.ngZone.runOutsideAngular(() => {
-      const instance = getAuth(fireApp);
+    this.instance = getAuth(fireApp);
 
-      if (emulatorConfig.enable) {
-        const emulator = emulatorConfig.auth;
+    if (emulatorConfig.enable) {
+      const emulator = emulatorConfig.auth;
 
-        connectAuthEmulator(
-          instance,
-          `http://${emulator.host}:${emulator.port}`,
-          { disableWarnings: true },
-        );
-      }
-
-      instance.onAuthStateChanged((user: User | null) =>
-        this.ngZone.run(() => {
-          this.currentUserSubject.next(user);
-          this.currentUserStateSubject.next(!!user);
-        }),
+      connectAuthEmulator(
+        this.instance,
+        `http://${emulator.host}:${emulator.port}`,
+        { disableWarnings: true },
       );
+    }
 
-      return instance;
+    this.instance.onAuthStateChanged((user: User | null) => {
+      this.currentUserSubject.next(user);
+      this.currentUserStateSubject.next(!!user);
     });
   }
 
@@ -75,18 +67,14 @@ export class FireAuthService {
       password,
     );
 
-    await this.ngZone.runOutsideAngular(async () => {
-      await reauthenticateWithCredential(user, credential);
-    });
+    await reauthenticateWithCredential(user, credential);
   }
 
   public async updateEmail(newEmail: string, password: string): Promise<void> {
     const user = <User>await firstValueFrom(this.currentUser$);
 
     await this.reauthenticateWithCredential(password);
-    await this.ngZone.runOutsideAngular(async () => {
-      await verifyBeforeUpdateEmail(user, newEmail);
-    });
+    await verifyBeforeUpdateEmail(user, newEmail);
   }
 
   public async updatePassword(
@@ -96,47 +84,34 @@ export class FireAuthService {
     const user = <User>await firstValueFrom(this.currentUser$);
 
     await this.reauthenticateWithCredential(currentPassword);
-    await this.ngZone.runOutsideAngular(async () => {
-      await updatePassword(user, nextPassword);
-    });
+    await updatePassword(user, nextPassword);
   }
 
   public async signInWithEmailAndPassword(
     email: string,
     password: string,
   ): Promise<UserCredential> {
-    return this.ngZone.runOutsideAngular(async () => {
-      await setPersistence(this.instance, browserLocalPersistence);
-      return signInWithEmailAndPassword(this.instance, email, password);
-    });
+    await setPersistence(this.instance, browserLocalPersistence);
+    return signInWithEmailAndPassword(this.instance, email, password);
   }
 
   public async signOut(): Promise<void> {
-    await this.ngZone.runOutsideAngular(async () => {
-      await this.instance.signOut();
-    });
+    await this.instance.signOut();
   }
 
   public async sendPasswordResetEmail(email: string): Promise<void> {
     if (!email) return;
-
-    await this.ngZone.runOutsideAngular(async () => {
-      await sendPasswordResetEmail(this.instance, email);
-    });
+    await sendPasswordResetEmail(this.instance, email);
   }
 
   public async getIdToken(refresh?: boolean): Promise<string> {
     const currentUserSubject = await firstValueFrom(this.currentUser$);
-    return this.ngZone.runOutsideAngular(() =>
-      getIdToken(<User>currentUserSubject, refresh),
-    );
+    return getIdToken(<User>currentUserSubject, refresh);
   }
 
   public async getIdTokenResult(refresh?: boolean): Promise<IdTokenResult> {
     const currentUserSubject = await firstValueFrom(this.currentUser$);
-    return this.ngZone.runOutsideAngular(() =>
-      getIdTokenResult(<User>currentUserSubject, refresh),
-    );
+    return getIdTokenResult(<User>currentUserSubject, refresh);
   }
 
   public async getCustomClaims<T>(refresh?: boolean): Promise<T & ParsedToken> {
