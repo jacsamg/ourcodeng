@@ -1,16 +1,9 @@
-import { Injectable, inject, NgZone } from '@angular/core';
+import { Injectable } from '@angular/core';
 import type { FirebaseApp } from 'firebase/app';
 import {
   connectStorageEmulator,
-  deleteObject,
   type FirebaseStorage,
-  getDownloadURL,
   getStorage,
-  ref,
-  type StorageReference,
-  type UploadMetadata,
-  type UploadResult,
-  uploadBytes,
 } from 'firebase/storage';
 import { defaultEmulatorconfig } from '../data/firebase.data';
 import type { FirebaseEmulatorConfig } from '../types/firebase.types';
@@ -19,8 +12,6 @@ import type { FirebaseEmulatorConfig } from '../types/firebase.types';
   providedIn: 'root',
 })
 export class FireStorageService {
-  private readonly ngZone = inject(NgZone);
-
   private instance!: FirebaseStorage;
 
   public init(
@@ -29,43 +20,15 @@ export class FireStorageService {
   ): void {
     if (this.instance) return;
 
-    this.instance = this.ngZone.runOutsideAngular(() => {
-      const instance = getStorage(fireApp);
+    this.instance = getStorage(fireApp);
 
-      if (emulatorConfig.enable) {
-        const emulator = emulatorConfig.storage;
-        connectStorageEmulator(instance, emulator.host, emulator.port);
-      }
-
-      return instance;
-    });
+    if (emulatorConfig.enable) {
+      const emulator = emulatorConfig.storage;
+      connectStorageEmulator(this.instance, emulator.host, emulator.port);
+    }
   }
 
-  public ref(path?: string): StorageReference {
-    return ref(this.instance, path);
-  }
-
-  public uploadBytes(
-    path: string | StorageReference,
-    data: Blob | Uint8Array | ArrayBuffer,
-    metadata?: UploadMetadata,
-  ): Promise<UploadResult> {
-    const ref = typeof path === 'string' ? this.ref(path) : path;
-    return this.ngZone.runOutsideAngular(() => {
-      return uploadBytes(ref, data, metadata);
-    });
-  }
-
-  public getDownloadURL(ref: StorageReference): Promise<string> {
-    return this.ngZone.runOutsideAngular(() => {
-      return getDownloadURL(ref);
-    });
-  }
-
-  public deleteFile(path: string): Promise<void> {
-    const ref = this.ref(path);
-    return this.ngZone.runOutsideAngular(() => {
-      return deleteObject(ref);
-    });
+  public getInstance(): FirebaseStorage {
+    return this.instance;
   }
 }
