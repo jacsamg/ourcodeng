@@ -1,0 +1,4 @@
+interface:
+  display_name: "OurCodeNG Fire"
+  short_description: "Guia para consumir @ourcodeng/fire en Angular"
+  default_prompt: "Use $ourcodeng-fire to implement Firebase integration in this Angular app using @ourcodeng/fire from node_modules."
