@@ -1,29 +1,25 @@
-import { Injectable } from '@angular/core';
-import type { FirebaseApp } from 'firebase/app';
+import { inject, Injectable } from '@angular/core';
 import {
   connectStorageEmulator,
   type FirebaseStorage,
   getStorage,
 } from 'firebase/storage';
-import { defaultEmulatorconfig } from '../data/firebase.data';
-import type { FirebaseEmulatorConfig } from '../types/firebase.types';
+import { FirebaseService } from './firebase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FireStorageService {
+  private readonly firebase = inject(FirebaseService);
   private instance!: FirebaseStorage;
 
-  public init(
-    fireApp: FirebaseApp,
-    emulatorConfig: FirebaseEmulatorConfig = defaultEmulatorconfig,
-  ): void {
+  public init(): void {
     if (this.instance) return;
 
-    this.instance = getStorage(fireApp);
+    this.instance = getStorage(this.firebase.getApp());
 
-    if (emulatorConfig.enable) {
-      const emulator = emulatorConfig.storage;
+    if (this.firebase.enabledEmulators) {
+      const emulator = this.firebase.emulatorConfig.storage;
       connectStorageEmulator(this.instance, emulator.host, emulator.port);
     }
   }

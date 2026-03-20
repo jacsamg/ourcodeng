@@ -18,34 +18,33 @@ import {
 ## Startup Recipe
 
 ```ts
-firebaseService.init(firebaseOptions);
-const app = firebaseService.getApp();
-
-await fireAuthService.init(app, emulatorConfig);
-firestoreService.init(app, ['(default)'], emulatorConfig);
-fireStorageService.init(app, emulatorConfig);
+firebaseService.init(firebaseOptions, enableEmulators, emulatorConfig);
+await fireAuthService.init();
+firestoreService.init(['(default)']);
+fireStorageService.init();
 ```
 
 ## FirebaseService
 
-- `init(options: FirebaseOptions): void`
+- `init(options: FirebaseOptions, enableEmulators?: boolean, emulatorConfig?: FirebaseEmulatorConfig): void`
 - `getApp(): FirebaseApp`
 
-Purpose: initialize and expose `FirebaseApp` once.
+Purpose: initialize and expose `FirebaseApp` once, and centralize emulator enablement plus host/port configuration.
 
 ## FirestoreService
 
-- `init(fireApp: FirebaseApp, dbNames: string[], emulatorConfig?: FirebaseEmulatorConfig): void`
+- `init(dbNames: string[]): void`
 - `getDbInstance(dbName?: string): Firestore`
 
 Notes:
 
 - Default DB name is `'(default)'` when omitted.
 - Throws if requested DB name was not initialized.
+- Reads emulator state from `FirebaseService`.
 
 ## FireAuthService
 
-- `init(fireApp: FirebaseApp, emulatorConfig?: FirebaseEmulatorConfig): Promise<void>`
+- `init(): Promise<void>`
 - `currentUser$` (`Observable<User | null>`)
 - `currentUserState$` (`Observable<boolean>`)
 - `signInWithEmailAndPassword(email: string, password: string): Promise<UserCredential>`
@@ -61,23 +60,30 @@ Notes:
 
 - `updateEmail` and `updatePassword` require user reauthentication with current password.
 - Token and claims calls require authenticated user context.
+- Reads emulator state from `FirebaseService`.
 
 ## FireStorageService
 
-- `init(fireApp: FirebaseApp, emulatorConfig?: FirebaseEmulatorConfig): void`
+- `init(): void`
 - `getInstance(): FirebaseStorage`
 
 Purpose: expose configured Storage instance for app logic.
+Reads emulator state from `FirebaseService`.
 
 ## Emulator Config Shape
 
 ```ts
 interface FirebaseEmulatorConfig {
-  enable: boolean;
   auth: { host: string; port: number };
   firestore: { host: string; port: number };
   storage: { host: string; port: number };
 }
+```
+
+Emulators are enabled separately:
+
+```ts
+firebaseService.init(firebaseOptions, true, emulatorConfig);
 ```
 
 Typical local ports:
@@ -89,10 +95,13 @@ Typical local ports:
 ## Common Failures and Fixes
 
 - Error: Firestore instance not found for dbName
-  - Fix: include that DB name in `firestoreService.init(..., dbNames, ...)`.
+  - Fix: include that DB name in `firestoreService.init(dbNames)`.
 
 - Error or undefined behavior from uninitialized services
   - Fix: run startup recipe before using auth/firestore/storage APIs.
 
 - Claims/token reads failing
   - Fix: confirm user is signed in before requesting token/claims.
+
+- Emulators not connecting
+  - Fix: ensure `enableEmulators` is `true` in `firebaseService.init(...)`; host/port config alone does not enable them.

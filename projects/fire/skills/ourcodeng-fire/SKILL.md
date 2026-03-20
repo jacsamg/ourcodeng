@@ -43,11 +43,10 @@ Prefer these services instead of duplicating SDK bootstrap logic.
 
 Apply this sequence in app startup logic (for example, app initializer or root service):
 
-1. `firebaseService.init(firebaseOptions)`
-2. `const app = firebaseService.getApp()`
-3. `await fireAuthService.init(app, emulatorConfig?)`
-4. `firestoreService.init(app, dbNames, emulatorConfig?)`
-5. `fireStorageService.init(app, emulatorConfig?)`
+1. `firebaseService.init(firebaseOptions, enableEmulators?, emulatorConfig?)`
+2. `await fireAuthService.init()`
+3. `firestoreService.init(dbNames)`
+4. `fireStorageService.init()`
 
 Pass all required Firestore DB names up front.
 
@@ -70,7 +69,7 @@ Use `currentUser$` and `currentUserState$` for reactive auth state in components
 
 Initialize with DB names once, then resolve instances by name:
 
-- `firestoreService.init(app, ['(default)', 'analytics'])`
+- `firestoreService.init(['(default)', 'analytics'])`
 - `firestoreService.getDbInstance()` for default DB
 - `firestoreService.getDbInstance('analytics')` for named DB
 
@@ -78,10 +77,21 @@ Treat `Firestore instance not found` as configuration error in app bootstrap.
 
 ## Emulator Pattern
 
-Use `FirebaseEmulatorConfig` when needed:
+Configure emulators from `FirebaseService`:
 
 - Enable only in local/dev environments unless explicitly requested.
 - Keep auth/firestore/storage host-port values aligned with local emulator suite.
+- Pass the boolean flag separately from the port config object.
+
+Example:
+
+```ts
+firebaseService.init(firebaseOptions, true, {
+  auth: { host: '127.0.0.1', port: 9099 },
+  firestore: { host: '127.0.0.1', port: 8080 },
+  storage: { host: '127.0.0.1', port: 9199 },
+});
+```
 
 If the app already has an environment config system, wire emulator config through it.
 

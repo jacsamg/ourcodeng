@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import type { FirebaseApp } from 'firebase/app';
 import {
   type Auth,
@@ -20,13 +20,13 @@ import {
   verifyBeforeUpdateEmail,
 } from 'firebase/auth';
 import { firstValueFrom, ReplaySubject } from 'rxjs';
-import { defaultEmulatorconfig } from '../data/firebase.data';
-import type { FirebaseEmulatorConfig } from '../types/firebase.types';
+import { FirebaseService } from './firebase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FireAuthService {
+  private readonly firebase = inject(FirebaseService);
   private instance!: Auth;
 
   private readonly currentUserSubject = new ReplaySubject<User | null>(1);
@@ -36,16 +36,13 @@ export class FireAuthService {
   public readonly currentUserState$ =
     this.currentUserStateSubject.asObservable();
 
-  public async init(
-    fireApp: FirebaseApp,
-    emulatorConfig: FirebaseEmulatorConfig = defaultEmulatorconfig,
-  ): Promise<void> {
+  public async init(): Promise<void> {
     if (this.instance) return;
 
-    this.instance = getAuth(fireApp);
+    this.instance = getAuth(this.firebase.getApp());
 
-    if (emulatorConfig.enable) {
-      const emulator = emulatorConfig.auth;
+    if (this.firebase.enabledEmulators) {
+      const emulator = this.firebase.emulatorConfig.auth;
 
       connectAuthEmulator(
         this.instance,
