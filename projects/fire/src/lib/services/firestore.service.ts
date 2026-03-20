@@ -16,10 +16,10 @@ export class FirestoreService {
   private dbInstances: Map<string, Firestore> = new Map();
   private bootstraped = false;
 
-  public init(dbNames: string[]): void {
+  public init(dbNames?: string | string[] | null): void {
     if (this.bootstraped) return;
 
-    for (const dbName of dbNames) {
+    for (const dbName of this.normalizeDbNames(dbNames)) {
       const instance = getFirestore(this.firebase.getApp(), dbName);
 
       if (this.firebase.enabledEmulators) {
@@ -41,5 +41,17 @@ export class FirestoreService {
     }
 
     return instance;
+  }
+
+  private normalizeDbNames(dbNames?: string | string[] | null): string[] {
+    if (Array.isArray(dbNames)) {
+      return dbNames.length > 0 ? dbNames : [FIRESTORE_DEFAULT_DB_NAME];
+    }
+
+    if (typeof dbNames === 'string') {
+      return [dbNames];
+    }
+
+    return [FIRESTORE_DEFAULT_DB_NAME];
   }
 }
