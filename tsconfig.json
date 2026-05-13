@@ -29,9 +29,6 @@
 	"references": [
 		{
 			"path": "./projects/fire/tsconfig.lib.json"
-		},
-		{
-			"path": "./projects/fire/tsconfig.spec.json"
 		}
 	]
 }

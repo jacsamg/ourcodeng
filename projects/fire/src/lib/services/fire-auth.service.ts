@@ -1,23 +1,13 @@
-import { inject, Injectable } from '@angular/core';
-import type { FirebaseApp } from 'firebase/app';
+import { Injectable, inject } from '@angular/core';
 import {
   type Auth,
-  browserLocalPersistence,
   connectAuthEmulator,
-  EmailAuthProvider,
   getAuth,
   getIdToken,
   getIdTokenResult,
   type IdTokenResult,
   type ParsedToken,
-  reauthenticateWithCredential,
-  sendPasswordResetEmail,
-  setPersistence,
-  signInWithEmailAndPassword,
   type User,
-  type UserCredential,
-  updatePassword,
-  verifyBeforeUpdateEmail,
 } from 'firebase/auth';
 import { firstValueFrom, ReplaySubject } from 'rxjs';
 import { FirebaseService } from './firebase.service';
@@ -27,7 +17,7 @@ import { FirebaseService } from './firebase.service';
 })
 export class FireAuthService {
   private readonly firebase = inject(FirebaseService);
-  private instance!: Auth;
+  private instance: Auth | null = null;
 
   private readonly currentUserSubject = new ReplaySubject<User | null>(1);
   public readonly currentUser$ = this.currentUserSubject.asObservable();
@@ -57,48 +47,16 @@ export class FireAuthService {
     });
   }
 
-  private async reauthenticateWithCredential(password: string): Promise<void> {
-    const user = <User>await firstValueFrom(this.currentUser$);
-    const credential = EmailAuthProvider.credential(
-      <string>user.email,
-      password,
-    );
+  public getInstance(): Auth {
+    if (!this.instance) {
+      throw new Error('Auth instance not initialized. Call init() first.');
+    }
 
-    await reauthenticateWithCredential(user, credential);
-  }
-
-  public async updateEmail(newEmail: string, password: string): Promise<void> {
-    const user = <User>await firstValueFrom(this.currentUser$);
-
-    await this.reauthenticateWithCredential(password);
-    await verifyBeforeUpdateEmail(user, newEmail);
-  }
-
-  public async updatePassword(
-    currentPassword: string,
-    nextPassword: string,
-  ): Promise<void> {
-    const user = <User>await firstValueFrom(this.currentUser$);
-
-    await this.reauthenticateWithCredential(currentPassword);
-    await updatePassword(user, nextPassword);
-  }
-
-  public async signInWithEmailAndPassword(
-    email: string,
-    password: string,
-  ): Promise<UserCredential> {
-    await setPersistence(this.instance, browserLocalPersistence);
-    return signInWithEmailAndPassword(this.instance, email, password);
+    return this.instance;
   }
 
   public async signOut(): Promise<void> {
-    await this.instance.signOut();
-  }
-
-  public async sendPasswordResetEmail(email: string): Promise<void> {
-    if (!email) return;
-    await sendPasswordResetEmail(this.instance, email);
+    await this.getInstance().signOut();
   }
 
   public async getIdToken(refresh?: boolean): Promise<string> {

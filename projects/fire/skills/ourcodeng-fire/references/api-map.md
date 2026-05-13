@@ -5,14 +5,7 @@ Use this reference when coding in an Angular app that consumes `@ourcodeng/fire`
 ## Imports
 
 ```ts
-import {
-  FirebaseService,
-  FireAuthService,
-  FirestoreService,
-  FireStorageService,
-  type FirebaseEmulatorConfig,
-  type FirestoreUpdateData,
-} from '@ourcodeng/fire';
+import { FirebaseService, FireAuthService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig, type FirestoreUpdateData } from "@ourcodeng/fire";
 ```
 
 ## Startup Recipe
@@ -20,7 +13,7 @@ import {
 ```ts
 firebaseService.init(firebaseOptions, enableEmulators, emulatorConfig);
 await fireAuthService.init();
-firestoreService.init(['(default)']);
+firestoreService.init(["(default)"]);
 fireStorageService.init();
 ```
 
@@ -45,22 +38,52 @@ Notes:
 ## FireAuthService
 
 - `init(): Promise<void>`
+- `getInstance(): Auth`
 - `currentUser$` (`Observable<User | null>`)
 - `currentUserState$` (`Observable<boolean>`)
-- `signInWithEmailAndPassword(email: string, password: string): Promise<UserCredential>`
 - `signOut(): Promise<void>`
-- `sendPasswordResetEmail(email: string): Promise<void>`
-- `updateEmail(newEmail: string, password: string): Promise<void>`
-- `updatePassword(currentPassword: string, nextPassword: string): Promise<void>`
 - `getIdToken(refresh?: boolean): Promise<string>`
 - `getIdTokenResult(refresh?: boolean): Promise<IdTokenResult>`
 - `getCustomClaims<T>(refresh?: boolean): Promise<T & ParsedToken>`
 
 Notes:
 
-- `updateEmail` and `updatePassword` require user reauthentication with current password.
 - Token and claims calls require authenticated user context.
 - Reads emulator state from `FirebaseService`.
+
+## FireAuthEmailService
+
+- `signInWithEmailAndPassword(email: string, password: string): Promise<UserCredential>`
+- `sendPasswordResetEmail(email: string): Promise<void>`
+- `updateEmail(newEmail: string, password: string): Promise<void>`
+- `updatePassword(currentPassword: string, nextPassword: string): Promise<void>`
+
+Notes:
+
+- Email/password sign-in also registers local persistence on the initialized `FireAuthService` instance.
+- `updateEmail` and `updatePassword` require user reauthentication with current password.
+
+## FireAuthGoogleService
+
+- `signInWithPopup(): Promise<UserCredential>`
+- `signInWithRedirect(): Promise<void>`
+- `getRedirectResult(): Promise<UserCredential | null>`
+
+Notes:
+
+- Google sign-in also registers first-time users.
+- Uses the initialized `FireAuthService` instance and local persistence.
+
+## FireAuthFacebookService
+
+- `signInWithPopup(): Promise<UserCredential>`
+- `signInWithRedirect(): Promise<void>`
+- `getRedirectResult(): Promise<UserCredential | null>`
+
+Notes:
+
+- Facebook sign-in also registers first-time users.
+- Uses the initialized `FireAuthService` instance and local persistence.
 
 ## FireStorageService
 

@@ -8,6 +8,43 @@
 			"root": "projects/fire",
 			"sourceRoot": "projects/fire/src",
 			"prefix": "lib",
+      "schematics": {
+        "@schematics/angular:component": {
+          "skipTests": true,
+          "type": "component",
+          "changeDetection": "OnPush"
+        },
+        "@schematics/angular:class": {
+          "skipTests": true
+        },
+        "@schematics/angular:directive": {
+          "skipTests": true,
+          "type": "directive"
+        },
+        "@schematics/angular:guard": {
+          "skipTests": true,
+          "typeSeparator": "."
+        },
+        "@schematics/angular:interceptor": {
+          "skipTests": true,
+          "typeSeparator": "."
+        },
+        "@schematics/angular:pipe": {
+          "skipTests": true,
+          "typeSeparator": "."
+        },
+        "@schematics/angular:resolver": {
+          "skipTests": true,
+          "typeSeparator": "."
+        },
+        "@schematics/angular:service": {
+          "skipTests": true,
+          "type": "service"
+        },
+        "@schematics/angular:module": {
+          "typeSeparator": "."
+        }
+      },
 			"architect": {
 				"build": {
 					"builder": "@angular/build:ng-packagr",

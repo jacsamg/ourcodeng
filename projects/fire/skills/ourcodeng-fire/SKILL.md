@@ -28,13 +28,7 @@ Read `references/api-map.md` first for ready-to-use patterns.
 Import only from `@ourcodeng/fire` in the consumer app:
 
 ```ts
-import {
-  FirebaseService,
-  FireAuthService,
-  FirestoreService,
-  FireStorageService,
-  type FirebaseEmulatorConfig,
-} from '@ourcodeng/fire';
+import { FirebaseService, FireAuthService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig } from "@ourcodeng/fire";
 ```
 
 Prefer these services instead of duplicating SDK bootstrap logic.
@@ -52,16 +46,32 @@ Pass all required Firestore DB names up front.
 
 ## Auth Pattern
 
-Use wrapper methods in `FireAuthService`:
+Use `FireAuthService` for auth initialization, shared auth state, token access, and sign-out:
 
-- `signInWithEmailAndPassword`
+- `getInstance`
 - `signOut`
-- `sendPasswordResetEmail`
-- `updateEmail`
-- `updatePassword`
 - `getIdToken`
 - `getIdTokenResult`
 - `getCustomClaims<T>`
+
+Use `FireAuthEmailService` for email/password auth and email/password account management:
+
+- `signInWithEmailAndPassword`
+- `sendPasswordResetEmail`
+- `updateEmail`
+- `updatePassword`
+
+Use `FireAuthGoogleService` for Google auth:
+
+- `signInWithPopup` for popup login or registration
+- `signInWithRedirect` to start redirect login or registration
+- `getRedirectResult` after returning from redirect
+
+Use `FireAuthFacebookService` for Facebook auth:
+
+- `signInWithPopup` for popup login or registration
+- `signInWithRedirect` to start redirect login or registration
+- `getRedirectResult` after returning from redirect
 
 Use `currentUser$` and `currentUserState$` for reactive auth state in components/services.
 
@@ -87,9 +97,9 @@ Example:
 
 ```ts
 firebaseService.init(firebaseOptions, true, {
-  auth: { host: '127.0.0.1', port: 9099 },
-  firestore: { host: '127.0.0.1', port: 8080 },
-  storage: { host: '127.0.0.1', port: 9199 },
+  auth: { host: "127.0.0.1", port: 9099 },
+  firestore: { host: "127.0.0.1", port: 8080 },
+  storage: { host: "127.0.0.1", port: 9199 },
 });
 ```
 
