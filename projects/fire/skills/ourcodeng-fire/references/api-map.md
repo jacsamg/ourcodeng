@@ -24,6 +24,10 @@ fireStorageService.init();
 
 Purpose: initialize and expose `FirebaseApp` once, and centralize emulator enablement plus host/port configuration.
 
+Notes:
+
+- `getApp()` throws `Firebase app is not initialized` if called before `init(...)`.
+
 ## FirestoreService
 
 - `init(dbNames: string[]): void`
@@ -93,6 +97,10 @@ Notes:
 Purpose: expose configured Storage instance for app logic.
 Reads emulator state from `FirebaseService`.
 
+Notes:
+
+- `getInstance()` throws `Firebase Storage is not initialized` if called before `init()`.
+
 ## Emulator Config Shape
 
 ```ts
@@ -122,6 +130,12 @@ Typical local ports:
 
 - Error or undefined behavior from uninitialized services
   - Fix: run startup recipe before using auth/firestore/storage APIs.
+
+- Error: Firebase app is not initialized
+  - Fix: call `firebaseService.init(...)` before initializing Auth, Firestore, Storage, or calling `firebaseService.getApp()`.
+
+- Error: Firebase Storage is not initialized
+  - Fix: call `fireStorageService.init()` before `fireStorageService.getInstance()`.
 
 - Claims/token reads failing
   - Fix: confirm user is signed in before requesting token/claims.

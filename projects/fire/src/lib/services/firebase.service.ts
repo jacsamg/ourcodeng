@@ -4,21 +4,21 @@ import {
   type FirebaseOptions,
   initializeApp,
 } from 'firebase/app';
-import { FirebaseEmulatorConfig } from '../types/firebase.types';
 import { defaultEmulatorconfig } from '../data/firebase.data';
+import { FirebaseEmulatorConfig } from '../types/firebase.types';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FirebaseService {
-  private app!: FirebaseApp;
+  private app: FirebaseApp | null = null;
   enabledEmulators = false;
   emulatorConfig: FirebaseEmulatorConfig = defaultEmulatorconfig;
 
   public init(
     options: FirebaseOptions,
     enableEmulators?: boolean,
-    emulatorConfig?: FirebaseEmulatorConfig
+    emulatorConfig?: FirebaseEmulatorConfig,
   ): void {
     if (this.app) return;
 
@@ -34,6 +34,10 @@ export class FirebaseService {
   }
 
   public getApp(): FirebaseApp {
+    if (!this.app) {
+      throw new Error('Firebase app is not initialized');
+    }
+
     return this.app;
   }
 }

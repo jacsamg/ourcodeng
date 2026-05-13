@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   connectStorageEmulator,
   type FirebaseStorage,
@@ -11,7 +11,7 @@ import { FirebaseService } from './firebase.service';
 })
 export class FireStorageService {
   private readonly firebase = inject(FirebaseService);
-  private instance!: FirebaseStorage;
+  private instance: FirebaseStorage | null = null;
 
   public init(): void {
     if (this.instance) return;
@@ -25,6 +25,10 @@ export class FireStorageService {
   }
 
   public getInstance(): FirebaseStorage {
+    if (!this.instance) {
+      throw new Error('Firebase Storage is not initialized');
+    }
+
     return this.instance;
   }
 }

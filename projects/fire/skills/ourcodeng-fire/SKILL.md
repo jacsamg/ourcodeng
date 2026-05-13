@@ -44,6 +44,8 @@ Apply this sequence in app startup logic (for example, app initializer or root s
 
 Pass all required Firestore DB names up front.
 
+`firebaseService.getApp()` throws `Firebase app is not initialized` when used before `firebaseService.init(...)`; treat that as a bootstrap ordering error.
+
 ## Auth Pattern
 
 Use `FireAuthService` for auth initialization, shared auth state, token access, and sign-out:
@@ -85,6 +87,15 @@ Initialize with DB names once, then resolve instances by name:
 
 Treat `Firestore instance not found` as configuration error in app bootstrap.
 
+## Storage Pattern
+
+Initialize Storage before resolving the SDK instance:
+
+- `fireStorageService.init()`
+- `fireStorageService.getInstance()`
+
+Treat `Firebase Storage is not initialized` as a bootstrap ordering error; call `fireStorageService.init()` before any storage read/write code asks for the instance.
+
 ## Emulator Pattern
 
 Configure emulators from `FirebaseService`:
@@ -112,7 +123,8 @@ Before finishing changes:
 1. Ensure all calls happen after corresponding `init` methods.
 2. Ensure all Firestore DB names used by app code are included during init.
 3. Ensure token/claims calls happen only with authenticated users.
-4. Keep changes in consumer app files; avoid editing library internals.
+4. Check for explicit initialization errors: `Firebase app is not initialized`, `Auth instance not initialized. Call init() first.`, `Firestore instance not found for dbName`, and `Firebase Storage is not initialized`.
+5. Keep changes in consumer app files; avoid editing library internals.
 
 ## Validation Checklist
 
