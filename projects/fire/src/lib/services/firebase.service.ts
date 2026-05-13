@@ -5,7 +5,7 @@ import {
   initializeApp,
 } from 'firebase/app';
 import { defaultEmulatorconfig } from '../data/firebase.data';
-import { FirebaseEmulatorConfig } from '../types/firebase.types';
+import type { FirebaseEmulatorConfig } from '../types/firebase.types';
 
 @Injectable({
   providedIn: 'root',
