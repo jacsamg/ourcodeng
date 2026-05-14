@@ -57,6 +57,7 @@ Notes:
 
 ## FireAuthEmailService
 
+- `createUserWithEmailAndPassword(email: string, password: string): Promise<UserCredential>`
 - `signInWithEmailAndPassword(email: string, password: string): Promise<UserCredential>`
 - `sendPasswordResetEmail(email: string): Promise<void>`
 - `updateEmail(newEmail: string, password: string): Promise<void>`
@@ -64,7 +65,7 @@ Notes:
 
 Notes:
 
-- Email/password sign-in also registers local persistence on the initialized `FireAuthService` instance.
+- Email/password account creation and sign-in also register local persistence on the initialized `FireAuthService` instance.
 - `updateEmail` and `updatePassword` require user reauthentication with current password.
 
 ## FireAuthGoogleService

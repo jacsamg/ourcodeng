@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import {
   type Auth,
   browserLocalPersistence,
+  createUserWithEmailAndPassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
@@ -20,6 +21,14 @@ import { FireAuthService } from './fire-auth.service';
 })
 export class FireAuthEmailService {
   private readonly fireAuth = inject(FireAuthService);
+
+  public async createUserWithEmailAndPassword(
+    email: string,
+    password: string,
+  ): Promise<UserCredential> {
+    const auth = await this.getAuthInstance();
+    return createUserWithEmailAndPassword(auth, email, password);
+  }
 
   public async signInWithEmailAndPassword(
     email: string,

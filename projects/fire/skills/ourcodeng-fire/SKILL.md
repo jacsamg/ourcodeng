@@ -56,8 +56,9 @@ Use `FireAuthService` for auth initialization, shared auth state, token access, 
 - `getIdTokenResult`
 - `getCustomClaims<T>`
 
-Use `FireAuthEmailService` for email/password auth and email/password account management:
+Use `FireAuthEmailService` for email/password account creation, auth, and account management:
 
+- `createUserWithEmailAndPassword`
 - `signInWithEmailAndPassword`
 - `sendPasswordResetEmail`
 - `updateEmail`

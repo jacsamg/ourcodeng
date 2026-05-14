@@ -120,10 +120,11 @@ autenticado.
 
 ### Email y password
 
-Usa `FireAuthEmailService` para iniciar sesion con correo y password, restablecer
-password y actualizar credenciales sensibles.
+Usa `FireAuthEmailService` para crear cuentas, iniciar sesion con correo y
+password, restablecer password y actualizar credenciales sensibles.
 
 ```ts
+await fireAuthEmailService.createUserWithEmailAndPassword(email, password);
 await fireAuthEmailService.signInWithEmailAndPassword(email, password);
 await fireAuthEmailService.sendPasswordResetEmail(email);
 
@@ -133,6 +134,7 @@ await fireAuthEmailService.updatePassword(currentPassword, nextPassword);
 
 API:
 
+- `createUserWithEmailAndPassword(email, password): Promise<UserCredential>`
 - `signInWithEmailAndPassword(email, password): Promise<UserCredential>`
 - `sendPasswordResetEmail(email): Promise<void>`
 - `updateEmail(newEmail, password): Promise<void>`
