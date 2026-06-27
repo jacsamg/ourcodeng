@@ -1,6 +1,6 @@
 ---
 name: ourcodeng-fire
-description: Integration guide for application developers consuming @ourcodeng/fire from node_modules. Use when an agent needs to implement or fix Firebase setup in an Angular app using this package, including app initialization, Auth initialization with caller-controlled persistence/popup-redirect resolver, Auth flows, Firestore (single or multiple databases), Storage, emulator config, token/custom-claims access, and dependency-injected service usage in app code.
+description: Integration guide for application developers consuming @ourcodeng/fire from node_modules. Use when an agent needs to implement or fix Firebase setup in an Angular app using this package, including app initialization, separated Auth initializer/user/token services with caller-controlled persistence/popup-redirect resolver, Auth flows, async Firestore (single or multiple databases), async Storage, emulator config, token/custom-claims access, and dependency-injected service usage in app code.
 ---
 
 # Ourcodeng Fire
@@ -16,7 +16,7 @@ Implement integration in app code. Do not modify `node_modules`.
 Determine the user goal before coding:
 
 - Bootstrap: initialize Firebase app and dependent services.
-- Auth: initialize persistence/resolver, login/logout, reset password, update email/password, token or claims.
+- Auth: initialize persistence/resolver, user-state listener, login, reset password, update email/password, token or claims.
 - Firestore: default DB or named DB instances.
 - Storage: initialize and use Firebase Storage instance.
 - Emulators: customize host/port and enable/disable by environment.
@@ -28,7 +28,7 @@ Read `references/api-map.md` first for ready-to-use patterns.
 Import only from `@ourcodeng/fire` in the consumer app:
 
 ```ts
-import { FirebaseService, FireAuthService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig } from "@ourcodeng/fire";
+import { FirebaseService, FireAuthInitializerService, FireAuthUserService, FireAuthTokenService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig } from "@ourcodeng/fire";
 ```
 
 Prefer these services instead of duplicating SDK bootstrap logic.
@@ -38,9 +38,10 @@ Prefer these services instead of duplicating SDK bootstrap logic.
 Apply this sequence in app startup logic (for example, app initializer or root service):
 
 1. `firebaseService.init(firebaseOptions, enableEmulators?, emulatorConfig?)`
-2. `await fireAuthService.init(persistence?, popupRedirectResolver?)`
-3. `firestoreService.init(dbNames)`
-4. `fireStorageService.init()`
+2. `await fireAuthInitializerService.init(persistence?, popupRedirectResolver?)`
+3. `await fireAuthUserService.init()`
+4. `await firestoreService.init(dbNames)`
+5. `await fireStorageService.init()`
 
 Pass all required Firestore DB names up front.
 
@@ -48,15 +49,13 @@ Pass all required Firestore DB names up front.
 
 ## Auth Pattern
 
-Use `FireAuthService` for auth initialization, caller-selected persistence/popup-redirect resolver, shared auth state, token access, and sign-out:
+Use the separated Auth services by responsibility:
 
-- `getInstance`
-- `signOut`
-- `getIdToken`
-- `getIdTokenResult`
-- `getCustomClaims<T>`
+- `FireAuthInitializerService` for auth initialization and `getInstance`
+- `FireAuthUserService` for `currentUser$`, `currentUserState$`, `init`, and `getInstance`
+- `FireAuthTokenService` for `getIdToken`, `getIdTokenResult`, and `getCustomClaims<T>`
 
-`FireAuthService.init(...)` defaults to `indexedDBLocalPersistence` and `browserPopupRedirectResolver`. Pass Firebase Auth SDK values when the app needs different behavior, for example `browserSessionPersistence`, `inMemoryPersistence`, or `undefined` as the resolver when popup/redirect support should not be installed.
+`FireAuthInitializerService.init(...)` defaults to `indexedDBLocalPersistence` and `browserPopupRedirectResolver`. Pass Firebase Auth SDK values when the app needs different behavior, for example `browserSessionPersistence`, `inMemoryPersistence`, or `undefined` as the resolver when popup/redirect support should not be installed.
 
 Example:
 
@@ -68,9 +67,11 @@ import {
   inMemoryPersistence,
 } from "firebase/auth";
 
-await fireAuthService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
-await fireAuthService.init(browserSessionPersistence);
-await fireAuthService.init(inMemoryPersistence, undefined);
+await fireAuthInitializerService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
+await fireAuthUserService.init();
+
+await fireAuthInitializerService.init(browserSessionPersistence);
+await fireAuthInitializerService.init(inMemoryPersistence, undefined);
 ```
 
 Use `FireAuthEmailService` for email/password account creation, auth, and account management:
@@ -97,26 +98,27 @@ Use `FireAuthFacebookService` for Facebook auth:
 
 Use `currentUser$` and `currentUserState$` for reactive auth state in components/services.
 
-Google and Facebook services use the already-initialized `FireAuthService` instance. Configure popup/redirect behavior in `FireAuthService.init(...)` before calling those provider services.
+Google and Facebook services use the already-initialized Auth instance through `FireAuthUserService`. Configure popup/redirect behavior in `FireAuthInitializerService.init(...)` before calling those provider services.
 
 ## Firestore Pattern
 
 Initialize with DB names once, then resolve instances by name:
 
-- `firestoreService.init(['(default)', 'analytics'])`
-- `firestoreService.getDbInstance()` for default DB
-- `firestoreService.getDbInstance('analytics')` for named DB
+- `firestoreService.initDbNames(['(default)', 'analytics'])` to register names before bootstrap
+- `await firestoreService.init(['(default)', 'analytics'])`
+- `await firestoreService.getDbInstance()` for default DB
+- `await firestoreService.getDbInstance('analytics')` for named DB
 
-Treat `Firestore instance not found` as configuration error in app bootstrap.
+`getDbInstance(...)` performs lazy initialization when needed. Treat `Firestore instance not found` as configuration error in app bootstrap.
 
 ## Storage Pattern
 
-Initialize Storage before resolving the SDK instance:
+Initialize Storage before resolving the SDK instance, or rely on lazy initialization from `getInstance()`:
 
-- `fireStorageService.init()`
-- `fireStorageService.getInstance()`
+- `await fireStorageService.init()`
+- `await fireStorageService.getInstance()`
 
-Treat `Firebase Storage is not initialized` as a bootstrap ordering error; call `fireStorageService.init()` before any storage read/write code asks for the instance.
+Both methods return the configured `FirebaseStorage` instance.
 
 ## Emulator Pattern
 
@@ -142,12 +144,13 @@ If the app already has an environment config system, wire emulator config throug
 
 Before finishing changes:
 
-1. Ensure all calls happen after corresponding `init` methods.
+1. Ensure Firebase app initialization happens before Auth, Firestore, or Storage.
 2. Ensure Auth persistence and popup/redirect resolver choices match the target runtime.
-3. Ensure all Firestore DB names used by app code are included during init.
-4. Ensure token/claims calls happen only with authenticated users.
-5. Check for explicit initialization errors: `Firebase app is not initialized`, `Auth instance not initialized. Call init() first.`, `Firestore instance not found for dbName`, and `Firebase Storage is not initialized`.
-6. Keep changes in consumer app files; avoid editing library internals.
+3. Ensure `FireAuthUserService.init()` runs before consuming `currentUser$`, `currentUserState$`, or token helpers.
+4. Ensure all Firestore DB names used by app code are included during init or registered through `initDbNames`.
+5. Ensure token/claims calls happen only with authenticated users.
+6. Check for explicit initialization errors: `Firebase app is not initialized`, `Auth instance not initialized. Call init() first.`, and `Firestore instance not found for dbName`.
+7. Keep changes in consumer app files; avoid editing library internals.
 
 ## Validation Checklist
 

@@ -15,7 +15,7 @@ npm i @ourcodeng/fire firebase
 Importa todo desde `@ourcodeng/fire`:
 
 ```ts
-import { FirebaseService, FireAuthService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig, type FirestoreUpdateData } from "@ourcodeng/fire";
+import { FirebaseService, FireAuthInitializerService, FireAuthUserService, FireAuthTokenService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig, type FirestoreUpdateData } from "@ourcodeng/fire";
 ```
 
 ## Inicializacion
@@ -25,14 +25,15 @@ usar Auth, Firestore o Storage.
 
 ```ts
 import { inject, Injectable } from "@angular/core";
-import { FirebaseService, FireAuthService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig } from "@ourcodeng/fire";
+import { FirebaseService, FireAuthInitializerService, FireAuthUserService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig } from "@ourcodeng/fire";
 import { browserPopupRedirectResolver, indexedDBLocalPersistence } from "firebase/auth";
 import { environment } from "../environments/environment";
 
 @Injectable({ providedIn: "root" })
 export class FirebaseBootstrapService {
   private readonly firebase = inject(FirebaseService);
-  private readonly auth = inject(FireAuthService);
+  private readonly authInitializer = inject(FireAuthInitializerService);
+  private readonly authUser = inject(FireAuthUserService);
   private readonly firestore = inject(FirestoreService);
   private readonly storage = inject(FireStorageService);
 
@@ -45,9 +46,10 @@ export class FirebaseBootstrapService {
 
     this.firebase.init(environment.firebase, environment.useFirebaseEmulators, emulatorConfig);
 
-    await this.auth.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
-    this.firestore.init(["(default)"]);
-    this.storage.init();
+    await this.authInitializer.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
+    await this.authUser.init();
+    await this.firestore.init(["(default)"]);
+    await this.storage.init();
   }
 }
 ```
@@ -55,9 +57,10 @@ export class FirebaseBootstrapService {
 Orden recomendado:
 
 1. `firebaseService.init(firebaseOptions, enableEmulators?, emulatorConfig?)`
-2. `await fireAuthService.init(persistence?, popupRedirectResolver?)`
-3. `firestoreService.init(dbNames?)`
-4. `fireStorageService.init()`
+2. `await fireAuthInitializerService.init(persistence?, popupRedirectResolver?)`
+3. `await fireAuthUserService.init()`
+4. `await firestoreService.init(dbNames?)`
+5. `await fireStorageService.init()`
 
 `enableEmulators` es el interruptor que activa los emuladores. El objeto
 `emulatorConfig` solo define host y puerto; pasarlo no activa los emuladores por
@@ -85,48 +88,54 @@ app.
 
 ## Auth
 
-`FireAuthService` inicializa Firebase Auth, expone el estado de sesion y permite
-obtener tokens. Desde la version 4.0, `init` acepta la persistencia y el
-resolver de popup/redirect que quieras usar en tu app.
+La API de Auth esta separada por responsabilidad:
+
+- `FireAuthInitializerService` inicializa y expone la instancia de Firebase Auth.
+- `FireAuthUserService` publica el estado reactivo del usuario.
+- `FireAuthTokenService` obtiene tokens y custom claims.
+- Los servicios de Email, Google y Facebook implementan los flujos de acceso.
+
+`FireAuthInitializerService.init` acepta la persistencia y el resolver de
+popup/redirect que quieras usar en tu app.
 
 ```ts
-await fireAuthService.init();
+await fireAuthInitializerService.init();
+await fireAuthUserService.init();
 
-fireAuthService.currentUser$.subscribe((user) => {
+fireAuthUserService.currentUser$.subscribe((user) => {
   console.log(user?.email);
 });
 
-fireAuthService.currentUserState$.subscribe((isSignedIn) => {
+fireAuthUserService.currentUserState$.subscribe((isSignedIn) => {
   console.log(isSignedIn);
 });
 
-const token = await fireAuthService.getIdToken();
-const claims = await fireAuthService.getCustomClaims<{ role?: string }>();
-
-await fireAuthService.signOut();
+const token = await fireAuthTokenService.getIdToken();
+const claims = await fireAuthTokenService.getCustomClaims<{ role?: string }>();
 ```
 
 API:
 
-- `init(persistence?: Persistence, popupRedirectResolver?: PopupRedirectResolver | undefined): Promise<void>`
-- `getInstance(): Auth`
-- `currentUser$: Observable<User | null>`
-- `currentUserState$: Observable<boolean>`
-- `signOut(): Promise<void>`
-- `getIdToken(refresh?: boolean): Promise<string>`
-- `getIdTokenResult(refresh?: boolean): Promise<IdTokenResult>`
-- `getCustomClaims<T>(refresh?: boolean): Promise<T & ParsedToken>`
+- `FireAuthInitializerService.init(persistence?: Persistence, popupRedirectResolver?: PopupRedirectResolver | undefined): Promise<void>`
+- `FireAuthInitializerService.getInstance(): Auth`
+- `FireAuthUserService.init(): Promise<void>`
+- `FireAuthUserService.getInstance(): Auth`
+- `FireAuthUserService.currentUser$: Observable<User | null>`
+- `FireAuthUserService.currentUserState$: Observable<boolean>`
+- `FireAuthTokenService.getIdToken(refresh?: boolean): Promise<string>`
+- `FireAuthTokenService.getIdTokenResult(refresh?: boolean): Promise<IdTokenResult>`
+- `FireAuthTokenService.getCustomClaims<T>(refresh?: boolean): Promise<T & ParsedToken>`
 
 Las llamadas a tokens y custom claims requieren que exista un usuario
 autenticado.
 
-Defaults de `init`:
+Defaults de `FireAuthInitializerService.init`:
 
 - `persistence`: `indexedDBLocalPersistence`
 - `popupRedirectResolver`: `browserPopupRedirectResolver`
 
-Puedes mantener los defaults llamando `await fireAuthService.init()`, o pasar
-opciones del SDK de Firebase Auth cuando necesites mas control:
+Puedes mantener los defaults llamando `await fireAuthInitializerService.init()`,
+o pasar opciones del SDK de Firebase Auth cuando necesites mas control:
 
 ```ts
 import {
@@ -136,19 +145,19 @@ import {
 } from "firebase/auth";
 
 // Persistencia solo durante la sesion del navegador.
-await fireAuthService.init(browserSessionPersistence);
+await fireAuthInitializerService.init(browserSessionPersistence);
 
 // Sesion en memoria, util cuando no quieres persistir credenciales localmente.
-await fireAuthService.init(inMemoryPersistence);
+await fireAuthInitializerService.init(inMemoryPersistence);
 
 // Mantener la persistencia default, pero deshabilitar soporte popup/redirect.
-await fireAuthService.init(indexedDBLocalPersistence, undefined);
+await fireAuthInitializerService.init(indexedDBLocalPersistence, undefined);
 ```
 
 Configura `popupRedirectResolver` cuando uses proveedores con popup o redirect
 en entornos donde necesites controlar el resolver. Los servicios de Google y
-Facebook usan la instancia ya inicializada por `FireAuthService`, asi que la
-decision se toma en `init`.
+Facebook usan la instancia ya inicializada por `FireAuthInitializerService`, asi
+que la decision se toma en `init`.
 
 ### Email y password
 
@@ -217,30 +226,34 @@ API:
 nombre de base de datos.
 
 ```ts
-firestoreService.init(["(default)", "analytics"]);
+await firestoreService.init(["(default)", "analytics"]);
 
-const db = firestoreService.getDbInstance();
-const analyticsDb = firestoreService.getDbInstance("analytics");
+const db = await firestoreService.getDbInstance();
+const analyticsDb = await firestoreService.getDbInstance("analytics");
 ```
 
 API:
 
-- `init(dbNames?: string | string[] | null): void`
-- `getDbInstance(dbName?: string): Firestore`
+- `initDbNames(dbNames?: string | string[] | null): void`
+- `init(dbNames?: string | string[] | null): Promise<void>`
+- `getDbInstance(dbName?: string): Promise<Firestore>`
 
 Notas:
 
 - Si no pasas `dbNames`, se inicializa `'(default)'`.
 - Si pides una base de datos que no fue inicializada, se lanza
   `Firestore instance not found for dbName: ...`.
-- Define todos los nombres de bases de datos al arrancar la aplicacion.
+- Define todos los nombres de bases de datos al arrancar la aplicacion. Puedes
+  registrarlos con `initDbNames(...)` antes de llamar `init(...)`.
+- `getDbInstance(...)` inicializa Firestore de forma lazy si todavia no se llamo
+  `init(...)`.
 
 Ejemplo con SDK de Firebase:
 
 ```ts
 import { collection, getDocs } from "firebase/firestore";
 
-const db = firestoreService.getDbInstance();
+const db = await firestoreService.getDbInstance();
 const snapshot = await getDocs(collection(db, "users"));
 ```
 
@@ -265,17 +278,17 @@ await updateDoc(doc(db, "users", userId), data);
 la API oficial de Firebase.
 
 ```ts
-fireStorageService.init();
+await fireStorageService.init();
 
-const storage = fireStorageService.getInstance();
+const storage = await fireStorageService.getInstance();
 ```
 
 API:
 
-- `init(): void`
-- `getInstance(): FirebaseStorage`
+- `init(): Promise<FirebaseStorage>`
+- `getInstance(): Promise<FirebaseStorage>`
 
-`getInstance()` lanza `Firebase Storage is not initialized` si se llama antes de
+`getInstance()` inicializa Storage de forma lazy si todavia no se llamo
 `init()`.
 
 Ejemplo:
@@ -283,7 +296,7 @@ Ejemplo:
 ```ts
 import { ref, uploadBytes } from "firebase/storage";
 
-const storage = fireStorageService.getInstance();
+const storage = await fireStorageService.getInstance();
 const fileRef = ref(storage, `avatars/${userId}.png`);
 
 await uploadBytes(fileRef, file);
@@ -317,12 +330,11 @@ Activa emuladores solo en entornos locales o de desarrollo.
   - Ejecuta `firebaseService.init(...)` antes de inicializar Auth, Firestore,
     Storage o pedir la app con `getApp()`.
 - `Auth instance not initialized. Call init() first.`
-  - Ejecuta `await fireAuthService.init()` antes de usar servicios de Auth.
+  - Ejecuta `await fireAuthInitializerService.init()` antes de usar servicios de
+    Auth, y `await fireAuthUserService.init()` antes de consumir estado de
+    usuario o tokens.
 - `Firestore instance not found for dbName: ...`
   - Incluye ese nombre en `firestoreService.init([...])`.
-- `Firebase Storage is not initialized`
-  - Ejecuta `fireStorageService.init()` antes de llamar
-    `fireStorageService.getInstance()`.
 - Tokens o claims fallan.
   - Verifica que el usuario este autenticado antes de llamar
     `getIdToken`, `getIdTokenResult` o `getCustomClaims`.

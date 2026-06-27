@@ -5,7 +5,7 @@ Use this reference when coding in an Angular app that consumes `@ourcodeng/fire`
 ## Imports
 
 ```ts
-import { FirebaseService, FireAuthService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig, type FirestoreUpdateData } from "@ourcodeng/fire";
+import { FirebaseService, FireAuthInitializerService, FireAuthUserService, FireAuthTokenService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig, type FirestoreUpdateData } from "@ourcodeng/fire";
 import { browserPopupRedirectResolver, indexedDBLocalPersistence } from "firebase/auth";
 ```
 
@@ -13,9 +13,10 @@ import { browserPopupRedirectResolver, indexedDBLocalPersistence } from "firebas
 
 ```ts
 firebaseService.init(firebaseOptions, enableEmulators, emulatorConfig);
-await fireAuthService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
-firestoreService.init(["(default)"]);
-fireStorageService.init();
+await fireAuthInitializerService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
+await fireAuthUserService.init();
+await firestoreService.init(["(default)"]);
+await fireStorageService.init();
 ```
 
 ## FirebaseService
@@ -31,25 +32,22 @@ Notes:
 
 ## FirestoreService
 
-- `init(dbNames?: string | string[] | null): void`
-- `getDbInstance(dbName?: string): Firestore`
+- `initDbNames(dbNames?: string | string[] | null): void`
+- `init(dbNames?: string | string[] | null): Promise<void>`
+- `getDbInstance(dbName?: string): Promise<Firestore>`
 
 Notes:
 
 - Default DB name is `'(default)'` when omitted.
 - Throws if requested DB name was not initialized.
+- `initDbNames(...)` can register DB names before bootstrap; it throws if called after bootstrap or during bootstrap.
+- `getDbInstance(...)` lazily calls `init()` if Firestore has not bootstrapped yet.
 - Reads emulator state from `FirebaseService`.
 
-## FireAuthService
+## FireAuthInitializerService
 
 - `init(persistence?: Persistence, popupRedirectResolver?: PopupRedirectResolver | undefined): Promise<void>`
 - `getInstance(): Auth`
-- `currentUser$` (`Observable<User | null>`)
-- `currentUserState$` (`Observable<boolean>`)
-- `signOut(): Promise<void>`
-- `getIdToken(refresh?: boolean): Promise<string>`
-- `getIdTokenResult(refresh?: boolean): Promise<IdTokenResult>`
-- `getCustomClaims<T>(refresh?: boolean): Promise<T & ParsedToken>`
 
 Notes:
 
@@ -57,7 +55,6 @@ Notes:
 - Pass a Firebase Auth `Persistence` when the app needs a different session policy, such as `browserSessionPersistence` or `inMemoryPersistence`.
 - Pass `undefined` as the second argument when the app should initialize Auth without popup/redirect resolver support.
 - Configure popup/redirect resolver before using Google or Facebook provider services.
-- Token and claims calls require authenticated user context.
 - Reads emulator state from `FirebaseService`.
 
 Examples:
@@ -70,11 +67,34 @@ import {
   inMemoryPersistence,
 } from "firebase/auth";
 
-await fireAuthService.init();
-await fireAuthService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
-await fireAuthService.init(browserSessionPersistence);
-await fireAuthService.init(inMemoryPersistence, undefined);
+await fireAuthInitializerService.init();
+await fireAuthInitializerService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
+await fireAuthInitializerService.init(browserSessionPersistence);
+await fireAuthInitializerService.init(inMemoryPersistence, undefined);
 ```
+
+## FireAuthUserService
+
+- `init(): Promise<void>`
+- `getInstance(): Auth`
+- `currentUser$` (`Observable<User | null>`)
+- `currentUserState$` (`Observable<boolean>`)
+
+Notes:
+
+- Uses the initialized `FireAuthInitializerService` instance.
+- Call `init()` once after Auth initialization to start publishing auth state.
+
+## FireAuthTokenService
+
+- `getIdToken(refresh?: boolean): Promise<string>`
+- `getIdTokenResult(refresh?: boolean): Promise<IdTokenResult>`
+- `getCustomClaims<T>(refresh?: boolean): Promise<T & ParsedToken>`
+
+Notes:
+
+- Uses `FireAuthUserService.currentUser$`.
+- Token and claims calls require authenticated user context.
 
 ## FireAuthEmailService
 
@@ -86,7 +106,7 @@ await fireAuthService.init(inMemoryPersistence, undefined);
 
 Notes:
 
-- Uses the initialized `FireAuthService` instance.
+- Uses the initialized `FireAuthUserService` instance.
 - `updateEmail` reauthenticates with the current password, sends verification to the new email through Firebase Auth, and completes the email change after the user verifies it.
 - `updatePassword` requires reauthentication with the current password before changing it.
 
@@ -99,7 +119,7 @@ Notes:
 Notes:
 
 - Google sign-in also registers first-time users.
-- Uses the initialized `FireAuthService` instance and its configured popup/redirect resolver.
+- Uses the initialized Auth instance and the popup/redirect resolver configured through `FireAuthInitializerService`.
 
 ## FireAuthFacebookService
 
@@ -110,19 +130,19 @@ Notes:
 Notes:
 
 - Facebook sign-in also registers first-time users.
-- Uses the initialized `FireAuthService` instance and its configured popup/redirect resolver.
+- Uses the initialized Auth instance and the popup/redirect resolver configured through `FireAuthInitializerService`.
 
 ## FireStorageService
 
-- `init(): void`
-- `getInstance(): FirebaseStorage`
+- `init(): Promise<FirebaseStorage>`
+- `getInstance(): Promise<FirebaseStorage>`
 
 Purpose: expose configured Storage instance for app logic.
 Reads emulator state from `FirebaseService`.
 
 Notes:
 
-- `getInstance()` throws `Firebase Storage is not initialized` if called before `init()`.
+- `getInstance()` lazily initializes Storage when needed.
 
 ## Emulator Config Shape
 
@@ -157,11 +177,8 @@ Typical local ports:
 - Error: Firebase app is not initialized
   - Fix: call `firebaseService.init(...)` before initializing Auth, Firestore, Storage, or calling `firebaseService.getApp()`.
 
-- Error: Firebase Storage is not initialized
-  - Fix: call `fireStorageService.init()` before `fireStorageService.getInstance()`.
-
 - Claims/token reads failing
-  - Fix: confirm user is signed in before requesting token/claims.
+  - Fix: call `fireAuthUserService.init()` and confirm user is signed in before requesting token/claims.
 
 - Emulators not connecting
   - Fix: ensure `enableEmulators` is `true` in `firebaseService.init(...)`; host/port config alone does not enable them.
