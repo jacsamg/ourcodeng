@@ -6,11 +6,11 @@ import {
   signInWithRedirect,
   type UserCredential,
 } from 'firebase/auth';
-import { FireAuthService } from './fire-auth.service';
+import { FireAuthUserService } from './fire-auth-user.service';
 
 @Service()
 export class FireAuthGoogleService {
-  private readonly fireAuth = inject(FireAuthService);
+  private readonly fireAuth = inject(FireAuthUserService);
   private readonly provider = new GoogleAuthProvider();
 
   public signInWithPopup(): Promise<UserCredential> {

@@ -1,32 +1,46 @@
 import { inject, Service } from '@angular/core';
-import {
-  connectStorageEmulator,
-  type FirebaseStorage,
-  getStorage,
-} from 'firebase/storage';
+import type { FirebaseStorage } from 'firebase/storage';
 import { FirebaseService } from './firebase.service';
 
 @Service()
 export class FireStorageService {
   private readonly firebase = inject(FirebaseService);
   private instance: FirebaseStorage | null = null;
+  private initPromise: Promise<FirebaseStorage> | null = null;
 
-  public init(): void {
-    if (this.instance) return;
+  public async init(): Promise<FirebaseStorage> {
+    if (this.instance) return this.instance;
 
-    this.instance = getStorage(this.firebase.getApp());
+    this.initPromise ??= this.createInstance().catch((error: unknown) => {
+      this.initPromise = null;
+      throw error;
+    });
 
-    if (this.firebase.enabledEmulators) {
-      const emulator = this.firebase.emulatorConfig.storage;
-      connectStorageEmulator(this.instance, emulator.host, emulator.port);
-    }
+    return this.initPromise;
   }
 
-  public getInstance(): FirebaseStorage {
-    if (!this.instance) {
-      throw new Error('Firebase Storage is not initialized');
-    }
+  public async getInstance(): Promise<FirebaseStorage> {
+    return this.instance ?? this.init();
+  }
 
+  private async createInstance(): Promise<FirebaseStorage> {
+    const { getStorage } = await import('firebase/storage');
+    const instance = getStorage(this.firebase.getApp());
+
+    await this.connectEmulatorIfEnabled(instance);
+
+    this.instance = instance;
     return this.instance;
+  }
+
+  private async connectEmulatorIfEnabled(
+    instance: FirebaseStorage,
+  ): Promise<void> {
+    if (!this.firebase.enabledEmulators) return;
+
+    const emulator = this.firebase.emulatorConfig.storage;
+    const { connectStorageEmulator } = await import('firebase/storage');
+
+    connectStorageEmulator(instance, emulator.host, emulator.port);
   }
 }

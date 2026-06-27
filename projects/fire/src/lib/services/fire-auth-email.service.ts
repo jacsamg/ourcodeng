@@ -11,11 +11,11 @@ import {
   verifyBeforeUpdateEmail,
 } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
-import { FireAuthService } from './fire-auth.service';
+import { FireAuthUserService } from './fire-auth-user.service';
 
 @Service()
 export class FireAuthEmailService {
-  private readonly fireAuth = inject(FireAuthService);
+  private readonly fireAuth = inject(FireAuthUserService);
 
   public createUserWithEmailAndPassword(
     email: string,
