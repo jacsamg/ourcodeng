@@ -1,5 +1,5 @@
 import { inject, Service } from '@angular/core';
-import { type Firestore, getFirestore } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 import { FIRESTORE_DEFAULT_DB_NAME } from '../data/firestore.data';
 import { FirebaseService } from './firebase.service';
 
@@ -10,11 +10,11 @@ export class FirestoreService {
   private readonly dbNames: string[] = [];
 
   private dbInstances: Map<string, Firestore> = new Map();
-  private bootstraped = false;
+  private bootstrapped = false;
   private initPromise: Promise<void> | null = null;
 
   public initDbNames(dbNames?: string | string[] | null): void {
-    if (this.bootstraped) {
+    if (this.bootstrapped) {
       throw new Error('Cannot initialize database names after bootstrap.');
     }
 
@@ -28,7 +28,7 @@ export class FirestoreService {
   }
 
   public async init(dbNames?: string | string[] | null): Promise<void> {
-    if (this.bootstraped) return;
+    if (this.bootstrapped) return;
 
     this.initPromise ??= this.bootstrap(dbNames).catch((error: unknown) => {
       this.initPromise = null;
@@ -41,7 +41,7 @@ export class FirestoreService {
   public async getDbInstance(
     dbName: string = FIRESTORE_DEFAULT_DB_NAME,
   ): Promise<Firestore> {
-    if (!this.bootstraped) {
+    if (!this.bootstrapped) {
       await this.init();
     }
 
@@ -61,6 +61,8 @@ export class FirestoreService {
       );
     }
 
+    const { getFirestore } = await import('firebase/firestore');
+
     for (const dbName of names) {
       const instance = getFirestore(this.firebase.getApp(), dbName);
 
@@ -69,7 +71,7 @@ export class FirestoreService {
       this.dbInstances.set(dbName, instance);
     }
 
-    this.bootstraped = true;
+    this.bootstrapped = true;
   }
 
   private normalizeDbNames(dbNames?: string | string[] | null): string[] {
