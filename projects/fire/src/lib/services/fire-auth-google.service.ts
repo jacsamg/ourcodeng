@@ -1,10 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import {
-  type Auth,
-  browserLocalPersistence,
   GoogleAuthProvider,
   getRedirectResult,
-  setPersistence,
   signInWithPopup,
   signInWithRedirect,
   type UserCredential,
@@ -18,25 +15,15 @@ export class FireAuthGoogleService {
   private readonly fireAuth = inject(FireAuthService);
   private readonly provider = new GoogleAuthProvider();
 
-  public async signInWithPopup(): Promise<UserCredential> {
-    const auth = await this.getAuthInstance();
-    return signInWithPopup(auth, this.provider);
+  public signInWithPopup(): Promise<UserCredential> {
+    return signInWithPopup(this.fireAuth.getInstance(), this.provider);
   }
 
-  public async signInWithRedirect(): Promise<void> {
-    const auth = await this.getAuthInstance();
-    await signInWithRedirect(auth, this.provider);
+  public signInWithRedirect(): Promise<void> {
+    return signInWithRedirect(this.fireAuth.getInstance(), this.provider);
   }
 
-  public async getRedirectResult(): Promise<UserCredential | null> {
-    const auth = await this.getAuthInstance();
-    return getRedirectResult(auth);
-  }
-
-  private async getAuthInstance(): Promise<Auth> {
-    const auth = this.fireAuth.getInstance();
-    await setPersistence(auth, browserLocalPersistence);
-
-    return auth;
+  public getRedirectResult(): Promise<UserCredential | null> {
+    return getRedirectResult(this.fireAuth.getInstance());
   }
 }

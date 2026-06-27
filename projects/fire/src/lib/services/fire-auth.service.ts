@@ -1,12 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import {
   type Auth,
+  browserPopupRedirectResolver,
   connectAuthEmulator,
-  getAuth,
   getIdToken,
   getIdTokenResult,
   type IdTokenResult,
+  indexedDBLocalPersistence,
+  initializeAuth,
   type ParsedToken,
+  type Persistence,
+  type PopupRedirectResolver,
   type User,
 } from 'firebase/auth';
 import { firstValueFrom, ReplaySubject } from 'rxjs';
@@ -26,10 +30,18 @@ export class FireAuthService {
   public readonly currentUserState$ =
     this.currentUserStateSubject.asObservable();
 
-  public async init(): Promise<void> {
+  public async init(
+    persistence: Persistence = indexedDBLocalPersistence,
+    popupRedirectResolver:
+      | PopupRedirectResolver
+      | undefined = browserPopupRedirectResolver,
+  ): Promise<void> {
     if (this.instance) return;
 
-    this.instance = getAuth(this.firebase.getApp());
+    this.instance = initializeAuth(this.firebase.getApp(), {
+      persistence,
+      popupRedirectResolver,
+    });
 
     if (this.firebase.enabledEmulators) {
       const emulator = this.firebase.emulatorConfig.auth;

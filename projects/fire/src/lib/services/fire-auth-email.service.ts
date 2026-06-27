@@ -1,12 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import {
-  type Auth,
-  browserLocalPersistence,
   createUserWithEmailAndPassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
-  setPersistence,
   signInWithEmailAndPassword,
   type User,
   type UserCredential,
@@ -22,20 +19,26 @@ import { FireAuthService } from './fire-auth.service';
 export class FireAuthEmailService {
   private readonly fireAuth = inject(FireAuthService);
 
-  public async createUserWithEmailAndPassword(
+  public createUserWithEmailAndPassword(
     email: string,
     password: string,
   ): Promise<UserCredential> {
-    const auth = await this.getAuthInstance();
-    return createUserWithEmailAndPassword(auth, email, password);
+    return createUserWithEmailAndPassword(
+      this.fireAuth.getInstance(),
+      email,
+      password,
+    );
   }
 
-  public async signInWithEmailAndPassword(
+  public signInWithEmailAndPassword(
     email: string,
     password: string,
   ): Promise<UserCredential> {
-    const auth = await this.getAuthInstance();
-    return signInWithEmailAndPassword(auth, email, password);
+    return signInWithEmailAndPassword(
+      this.fireAuth.getInstance(),
+      email,
+      password,
+    );
   }
 
   private async reauthenticateWithCredential(password: string): Promise<User> {
@@ -65,12 +68,5 @@ export class FireAuthEmailService {
   public async sendPasswordResetEmail(email: string): Promise<void> {
     if (!email) return;
     await sendPasswordResetEmail(this.fireAuth.getInstance(), email);
-  }
-
-  private async getAuthInstance(): Promise<Auth> {
-    const auth = this.fireAuth.getInstance();
-    await setPersistence(auth, browserLocalPersistence);
-
-    return auth;
   }
 }
