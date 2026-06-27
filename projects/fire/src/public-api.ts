@@ -7,6 +7,7 @@ export * from './lib/services/fire-auth.service';
 export * from './lib/services/fire-auth-email.service';
 export * from './lib/services/fire-auth-facebook.service';
 export * from './lib/services/fire-auth-google.service';
+export * from './lib/services/fire-auth-initializer.service';
 export * from './lib/services/fire-storage.service';
 export * from './lib/services/firebase.service';
 export * from './lib/services/firestore.service';

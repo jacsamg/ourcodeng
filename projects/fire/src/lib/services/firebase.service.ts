@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Service } from '@angular/core';
 import {
   type FirebaseApp,
   type FirebaseOptions,
@@ -7,9 +7,7 @@ import {
 import { defaultEmulatorconfig } from '../data/firebase.data';
 import type { FirebaseEmulatorConfig } from '../types/firebase.types';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class FirebaseService {
   private app: FirebaseApp | null = null;
   enabledEmulators = false;

@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -13,9 +13,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { FireAuthService } from './fire-auth.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class FireAuthEmailService {
   private readonly fireAuth = inject(FireAuthService);
 

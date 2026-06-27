@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import {
   connectStorageEmulator,
   type FirebaseStorage,
@@ -6,9 +6,7 @@ import {
 } from 'firebase/storage';
 import { FirebaseService } from './firebase.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class FireStorageService {
   private readonly firebase = inject(FirebaseService);
   private instance: FirebaseStorage | null = null;

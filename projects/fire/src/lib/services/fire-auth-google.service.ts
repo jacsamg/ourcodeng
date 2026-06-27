@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import {
   GoogleAuthProvider,
   getRedirectResult,
@@ -8,9 +8,7 @@ import {
 } from 'firebase/auth';
 import { FireAuthService } from './fire-auth.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class FireAuthGoogleService {
   private readonly fireAuth = inject(FireAuthService);
   private readonly provider = new GoogleAuthProvider();
