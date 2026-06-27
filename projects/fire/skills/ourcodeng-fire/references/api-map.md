@@ -6,13 +6,14 @@ Use this reference when coding in an Angular app that consumes `@ourcodeng/fire`
 
 ```ts
 import { FirebaseService, FireAuthService, FireAuthEmailService, FireAuthFacebookService, FireAuthGoogleService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig, type FirestoreUpdateData } from "@ourcodeng/fire";
+import { browserPopupRedirectResolver, indexedDBLocalPersistence } from "firebase/auth";
 ```
 
 ## Startup Recipe
 
 ```ts
 firebaseService.init(firebaseOptions, enableEmulators, emulatorConfig);
-await fireAuthService.init();
+await fireAuthService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
 firestoreService.init(["(default)"]);
 fireStorageService.init();
 ```
@@ -30,7 +31,7 @@ Notes:
 
 ## FirestoreService
 
-- `init(dbNames: string[]): void`
+- `init(dbNames?: string | string[] | null): void`
 - `getDbInstance(dbName?: string): Firestore`
 
 Notes:
@@ -41,7 +42,7 @@ Notes:
 
 ## FireAuthService
 
-- `init(): Promise<void>`
+- `init(persistence?: Persistence, popupRedirectResolver?: PopupRedirectResolver | undefined): Promise<void>`
 - `getInstance(): Auth`
 - `currentUser$` (`Observable<User | null>`)
 - `currentUserState$` (`Observable<boolean>`)
@@ -52,8 +53,28 @@ Notes:
 
 Notes:
 
+- `init` defaults to `indexedDBLocalPersistence` and `browserPopupRedirectResolver`.
+- Pass a Firebase Auth `Persistence` when the app needs a different session policy, such as `browserSessionPersistence` or `inMemoryPersistence`.
+- Pass `undefined` as the second argument when the app should initialize Auth without popup/redirect resolver support.
+- Configure popup/redirect resolver before using Google or Facebook provider services.
 - Token and claims calls require authenticated user context.
 - Reads emulator state from `FirebaseService`.
+
+Examples:
+
+```ts
+import {
+  browserPopupRedirectResolver,
+  browserSessionPersistence,
+  indexedDBLocalPersistence,
+  inMemoryPersistence,
+} from "firebase/auth";
+
+await fireAuthService.init();
+await fireAuthService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
+await fireAuthService.init(browserSessionPersistence);
+await fireAuthService.init(inMemoryPersistence, undefined);
+```
 
 ## FireAuthEmailService
 
@@ -65,8 +86,9 @@ Notes:
 
 Notes:
 
-- Email/password account creation and sign-in also register local persistence on the initialized `FireAuthService` instance.
-- `updateEmail` and `updatePassword` require user reauthentication with current password.
+- Uses the initialized `FireAuthService` instance.
+- `updateEmail` reauthenticates with the current password, sends verification to the new email through Firebase Auth, and completes the email change after the user verifies it.
+- `updatePassword` requires reauthentication with the current password before changing it.
 
 ## FireAuthGoogleService
 
@@ -77,7 +99,7 @@ Notes:
 Notes:
 
 - Google sign-in also registers first-time users.
-- Uses the initialized `FireAuthService` instance and local persistence.
+- Uses the initialized `FireAuthService` instance and its configured popup/redirect resolver.
 
 ## FireAuthFacebookService
 
@@ -88,7 +110,7 @@ Notes:
 Notes:
 
 - Facebook sign-in also registers first-time users.
-- Uses the initialized `FireAuthService` instance and local persistence.
+- Uses the initialized `FireAuthService` instance and its configured popup/redirect resolver.
 
 ## FireStorageService
 

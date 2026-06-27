@@ -1,6 +1,6 @@
 ---
 name: ourcodeng-fire
-description: Integration guide for application developers consuming @ourcodeng/fire from node_modules. Use when an agent needs to implement or fix Firebase setup in an Angular app using this package, including app initialization, Auth flows, Firestore (single or multiple databases), Storage, emulator config, token/custom-claims access, and dependency-injected service usage in app code.
+description: Integration guide for application developers consuming @ourcodeng/fire from node_modules. Use when an agent needs to implement or fix Firebase setup in an Angular app using this package, including app initialization, Auth initialization with caller-controlled persistence/popup-redirect resolver, Auth flows, Firestore (single or multiple databases), Storage, emulator config, token/custom-claims access, and dependency-injected service usage in app code.
 ---
 
 # Ourcodeng Fire
@@ -16,7 +16,7 @@ Implement integration in app code. Do not modify `node_modules`.
 Determine the user goal before coding:
 
 - Bootstrap: initialize Firebase app and dependent services.
-- Auth: login/logout, reset password, update email/password, token or claims.
+- Auth: initialize persistence/resolver, login/logout, reset password, update email/password, token or claims.
 - Firestore: default DB or named DB instances.
 - Storage: initialize and use Firebase Storage instance.
 - Emulators: customize host/port and enable/disable by environment.
@@ -38,7 +38,7 @@ Prefer these services instead of duplicating SDK bootstrap logic.
 Apply this sequence in app startup logic (for example, app initializer or root service):
 
 1. `firebaseService.init(firebaseOptions, enableEmulators?, emulatorConfig?)`
-2. `await fireAuthService.init()`
+2. `await fireAuthService.init(persistence?, popupRedirectResolver?)`
 3. `firestoreService.init(dbNames)`
 4. `fireStorageService.init()`
 
@@ -48,13 +48,30 @@ Pass all required Firestore DB names up front.
 
 ## Auth Pattern
 
-Use `FireAuthService` for auth initialization, shared auth state, token access, and sign-out:
+Use `FireAuthService` for auth initialization, caller-selected persistence/popup-redirect resolver, shared auth state, token access, and sign-out:
 
 - `getInstance`
 - `signOut`
 - `getIdToken`
 - `getIdTokenResult`
 - `getCustomClaims<T>`
+
+`FireAuthService.init(...)` defaults to `indexedDBLocalPersistence` and `browserPopupRedirectResolver`. Pass Firebase Auth SDK values when the app needs different behavior, for example `browserSessionPersistence`, `inMemoryPersistence`, or `undefined` as the resolver when popup/redirect support should not be installed.
+
+Example:
+
+```ts
+import {
+  browserPopupRedirectResolver,
+  browserSessionPersistence,
+  indexedDBLocalPersistence,
+  inMemoryPersistence,
+} from "firebase/auth";
+
+await fireAuthService.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
+await fireAuthService.init(browserSessionPersistence);
+await fireAuthService.init(inMemoryPersistence, undefined);
+```
 
 Use `FireAuthEmailService` for email/password account creation, auth, and account management:
 
@@ -63,6 +80,8 @@ Use `FireAuthEmailService` for email/password account creation, auth, and accoun
 - `sendPasswordResetEmail`
 - `updateEmail`
 - `updatePassword`
+
+`updateEmail` reauthenticates with the current password, sends verification to the new email through Firebase Auth, and completes the email change after the user verifies it. `updatePassword` reauthenticates with the current password before changing it.
 
 Use `FireAuthGoogleService` for Google auth:
 
@@ -77,6 +96,8 @@ Use `FireAuthFacebookService` for Facebook auth:
 - `getRedirectResult` after returning from redirect
 
 Use `currentUser$` and `currentUserState$` for reactive auth state in components/services.
+
+Google and Facebook services use the already-initialized `FireAuthService` instance. Configure popup/redirect behavior in `FireAuthService.init(...)` before calling those provider services.
 
 ## Firestore Pattern
 
@@ -122,10 +143,11 @@ If the app already has an environment config system, wire emulator config throug
 Before finishing changes:
 
 1. Ensure all calls happen after corresponding `init` methods.
-2. Ensure all Firestore DB names used by app code are included during init.
-3. Ensure token/claims calls happen only with authenticated users.
-4. Check for explicit initialization errors: `Firebase app is not initialized`, `Auth instance not initialized. Call init() first.`, `Firestore instance not found for dbName`, and `Firebase Storage is not initialized`.
-5. Keep changes in consumer app files; avoid editing library internals.
+2. Ensure Auth persistence and popup/redirect resolver choices match the target runtime.
+3. Ensure all Firestore DB names used by app code are included during init.
+4. Ensure token/claims calls happen only with authenticated users.
+5. Check for explicit initialization errors: `Firebase app is not initialized`, `Auth instance not initialized. Call init() first.`, `Firestore instance not found for dbName`, and `Firebase Storage is not initialized`.
+6. Keep changes in consumer app files; avoid editing library internals.
 
 ## Validation Checklist
 

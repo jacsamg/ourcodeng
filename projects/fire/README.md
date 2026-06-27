@@ -26,6 +26,7 @@ usar Auth, Firestore o Storage.
 ```ts
 import { inject, Injectable } from "@angular/core";
 import { FirebaseService, FireAuthService, FirestoreService, FireStorageService, type FirebaseEmulatorConfig } from "@ourcodeng/fire";
+import { browserPopupRedirectResolver, indexedDBLocalPersistence } from "firebase/auth";
 import { environment } from "../environments/environment";
 
 @Injectable({ providedIn: "root" })
@@ -44,7 +45,7 @@ export class FirebaseBootstrapService {
 
     this.firebase.init(environment.firebase, environment.useFirebaseEmulators, emulatorConfig);
 
-    await this.auth.init();
+    await this.auth.init(indexedDBLocalPersistence, browserPopupRedirectResolver);
     this.firestore.init(["(default)"]);
     this.storage.init();
   }
@@ -54,7 +55,7 @@ export class FirebaseBootstrapService {
 Orden recomendado:
 
 1. `firebaseService.init(firebaseOptions, enableEmulators?, emulatorConfig?)`
-2. `await fireAuthService.init()`
+2. `await fireAuthService.init(persistence?, popupRedirectResolver?)`
 3. `firestoreService.init(dbNames?)`
 4. `fireStorageService.init()`
 
@@ -85,7 +86,8 @@ app.
 ## Auth
 
 `FireAuthService` inicializa Firebase Auth, expone el estado de sesion y permite
-obtener tokens.
+obtener tokens. Desde la version 4.0, `init` acepta la persistencia y el
+resolver de popup/redirect que quieras usar en tu app.
 
 ```ts
 await fireAuthService.init();
@@ -106,7 +108,7 @@ await fireAuthService.signOut();
 
 API:
 
-- `init(): Promise<void>`
+- `init(persistence?: Persistence, popupRedirectResolver?: PopupRedirectResolver | undefined): Promise<void>`
 - `getInstance(): Auth`
 - `currentUser$: Observable<User | null>`
 - `currentUserState$: Observable<boolean>`
@@ -118,10 +120,40 @@ API:
 Las llamadas a tokens y custom claims requieren que exista un usuario
 autenticado.
 
+Defaults de `init`:
+
+- `persistence`: `indexedDBLocalPersistence`
+- `popupRedirectResolver`: `browserPopupRedirectResolver`
+
+Puedes mantener los defaults llamando `await fireAuthService.init()`, o pasar
+opciones del SDK de Firebase Auth cuando necesites mas control:
+
+```ts
+import {
+  browserSessionPersistence,
+  indexedDBLocalPersistence,
+  inMemoryPersistence,
+} from "firebase/auth";
+
+// Persistencia solo durante la sesion del navegador.
+await fireAuthService.init(browserSessionPersistence);
+
+// Sesion en memoria, util cuando no quieres persistir credenciales localmente.
+await fireAuthService.init(inMemoryPersistence);
+
+// Mantener la persistencia default, pero deshabilitar soporte popup/redirect.
+await fireAuthService.init(indexedDBLocalPersistence, undefined);
+```
+
+Configura `popupRedirectResolver` cuando uses proveedores con popup o redirect
+en entornos donde necesites controlar el resolver. Los servicios de Google y
+Facebook usan la instancia ya inicializada por `FireAuthService`, asi que la
+decision se toma en `init`.
+
 ### Email y password
 
 Usa `FireAuthEmailService` para crear cuentas, iniciar sesion con correo y
-password, restablecer password y actualizar credenciales sensibles.
+password, restablecer password y administrar credenciales sensibles.
 
 ```ts
 await fireAuthEmailService.createUserWithEmailAndPassword(email, password);
@@ -140,8 +172,10 @@ API:
 - `updateEmail(newEmail, password): Promise<void>`
 - `updatePassword(currentPassword, nextPassword): Promise<void>`
 
-`updateEmail` y `updatePassword` reautentican al usuario con su password actual
-antes de hacer el cambio.
+`updateEmail` reautentica al usuario con su password actual y envia una
+verificacion al nuevo correo mediante `verifyBeforeUpdateEmail`; Firebase aplica
+el cambio cuando el usuario completa esa verificacion. `updatePassword`
+reautentica antes de cambiar el password.
 
 ### Google
 
