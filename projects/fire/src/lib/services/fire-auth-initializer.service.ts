@@ -44,10 +44,11 @@ export class FireAuthInitializerService {
     const emulator = this.firebase.emulatorConfig.auth;
     const authUrl = `http://${emulator.host}:${emulator.port}`;
     const { connectAuthEmulator } = await import('firebase/auth');
+    const caninitEmulator = (
+      instance as unknown as { _canInitEmulator?: boolean }
+    )._canInitEmulator;
 
-    if (
-      (instance as unknown as { _canInitEmulator?: boolean })._canInitEmulator
-    ) {
+    if (caninitEmulator !== false) {
       connectAuthEmulator(instance, authUrl, {
         disableWarnings: true,
       });
